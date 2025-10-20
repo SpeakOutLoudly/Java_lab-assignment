@@ -18,12 +18,12 @@ public class OrderAppService {
     public Order create(long buyerId, long productId, int qty){
         var p = products.findById(productId).orElseThrow(()->new RuntimeException("商品不存在"));
         if(qty<=0) throw new RuntimeException("数量必须>0");
-        if(p.stock<qty) throw new RuntimeException("库存不足");
-        var o = Order.of(idGen.getAndIncrement(), buyerId, p.sellerId, p.id, qty, p.price*qty);
+        if(p.getStock()<qty) throw new RuntimeException("库存不足");
+        var o = Order.of(idGen.getAndIncrement(), buyerId, p.getSellerId(), p.getId(), qty, p.getPriceCents()*qty);
         // 简化：直接确认（跳过支付/发货）
-        o.status = Order.Status.CONFIRMED;
+        o.getStatus() = Order.Status.CONFIRMED;
         // 写入订单与扣库存（这里不考虑并发/事务）
-        p.stock -= qty;
+        p.getStock() -= qty;
         products.save(p);
         return orders.save(o);
     }
