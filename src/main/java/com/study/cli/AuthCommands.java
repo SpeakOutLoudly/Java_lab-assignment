@@ -6,8 +6,11 @@ import com.study.domain.model.User;
 import com.study.security.Session;
 import com.study.domain.model.User;
 
+// 主要使用 session 的方法，负责处理本次会话
 // 用于登录
-@Command(name = "auth", subcommands = {User.class, AuthCommands.Login.class, AuthCommands.Whoami.class, AuthCommands.Logout.class}, description = "用户登录")
+@Command(name = "auth", description = "用户登录",
+        subcommands = {User.class, AuthCommands.Login.class,
+        AuthCommands.Whoami.class, AuthCommands.Logout.class})
 public class AuthCommands implements Runnable {
     public void run(){ System.out.println("子命令：login / whoami / logout"); }
 
@@ -28,7 +31,7 @@ public class AuthCommands implements Runnable {
         public void run() {
             var u = auth.authenticate(username, password).orElse(null);
             if (u == null) System.out.println("登录失败/用户不存在或被禁用");
-            else { session.set(u); System.out.printf("欢迎 %s [%s]%n", u.getName(), u.role); }
+            else { session.login(u); System.out.printf("欢迎 %s [%s]%n", u.getUserName(), u.getRole()); }
         }
     }
 
@@ -38,7 +41,7 @@ public class AuthCommands implements Runnable {
         public Whoami(Session s){ this.session = s; }
         public void run() {
             var u = session.requireLogin();
-            System.out.println(u==null ? "未登录" : (u.getName() + " [" + u.getRole() + "]"));
+            System.out.println(u==null ? "未登录" : (u.getUserName() + " [" + u.getRole() + "]"));
         }
     }
 
@@ -46,6 +49,6 @@ public class AuthCommands implements Runnable {
     static class Logout implements Runnable {
         private final Session session;
         public Logout(Session s){ this.session=s; }
-        public void run() { session.set(null); System.out.println("已退出登录"); }
+        public void run() { session.logout(); System.out.println("已退出登录"); }
     }
 }

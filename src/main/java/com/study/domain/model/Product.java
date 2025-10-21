@@ -128,7 +128,7 @@ public final class Product {
     /* 访问字段 */
     public long getId() { return id; }
     public long getSellerId() { return sellerId; }
-    public String getName() { return name; }
+    public String getProductName() { return name; }
     public String getDescription() { return description; }
     public int getPriceCents() { return price; }
     public int getStock() { return stock; }

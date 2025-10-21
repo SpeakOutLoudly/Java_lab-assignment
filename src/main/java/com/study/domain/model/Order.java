@@ -5,13 +5,13 @@ import java.util.Objects;
 
 public final class Order {
     private long    id;
-    private long  buyerId;
-    private long  sellerId;
-    private long  productId;      // 商品ID
+    private long    buyerId;
+    private long    sellerId;
+    private long    productId;      // 商品ID
 
     private int     qty;            // 数量
     private int     amount;         // 金额
-    private Status status;
+    private Status  status;
 
     private Instant createdAt;
     private Instant confirmedAt;

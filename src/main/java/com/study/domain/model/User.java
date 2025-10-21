@@ -38,19 +38,20 @@ public final class User {
 
     /* 访问字段 */
     public long     getId() { return this.id; }
-    public String   getName() { return this.username; }
+    public String   getUserName() { return this.username; }
     public Role     getRole() { return this.role; }
     public boolean  isEnabled() { return this.enabled; }
     public String   getPasswordHash() { return this.passwordHash; }
     public Instant  getCreatedAt() { return this.createdAt; }
     public Instant  getLastLogin() { return this.lastLoginAt; }
-
+    public long     getVersion() { return this.version; }
 
     /* 领域行为 */
     public void     disable() { this.enabled = false; }
     public void     enable() { this.enabled = true; }
     public void     changePasswordHash(String newHash) { if(newHash != null) newHash = this.passwordHash;}
     public void     touchLastLogin(Instant now) { this.lastLoginAt = now; }
+    public void     bumpVersion() { this.version ++; }
     /* 角色判断便捷方法 */
     public boolean  isBuyer(){ return role == Role.BUYER; }
     public boolean  isSeller(){ return role == Role.SELLER; }

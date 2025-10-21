@@ -49,7 +49,7 @@ public class OrderCommands implements Runnable {
             System.out.printf("%-6s %-8s %-6s %-8s %-10s%n","订单ID","商品ID","数量","金额(元)","状态");
             for(var o: list){
                 System.out.printf("%-6d %-8d %-6d %-8.2f %-10s%n",
-                        o.id, o.productId, o.qty, o.amount/100.0, o.status);
+                        o.id, o.productId, o.qty, o.amount/100.0, o.getStatus());
             }
         }
     }
