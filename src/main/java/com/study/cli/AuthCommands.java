@@ -4,7 +4,11 @@ import com.study.application.AuthAppService;
 import picocli.CommandLine.*;
 import com.study.domain.model.User;
 import com.study.security.Session;
-import com.study.domain.model.User;
+
+/**
+ * TODO 后续要增加账号 disabled 指令
+ * */
+
 
 // 主要使用 session 的方法，负责处理本次会话
 // 用于登录
@@ -18,18 +22,42 @@ public class AuthCommands implements Runnable {
     private final AuthAppService auth;
     public AuthCommands(Session s, AuthAppService a){ this.session=s; this.auth=a; }
 
-    @Command(name="login", description="登录（演示版只凭用户名）")
-    static class Login implements Runnable {
-        @Option(names="--u", required=true, description="用户名（alice/bob/sam/tom）")
-        String username;
+    // 创建角色 只有管理员可以创建管理员，创建后自动登录
+    @Command(name = "create", description = "创建用户（买家/卖家）")
+    static class Create implements Runnable {
+        @Option(names = "--u", required = true, description = "用户名") String username;
+        @Option(names = "--p", required = true, interactive = true, description = "密码") String password;
+        @Option(names = "--r", required = true, description = "角色") User.Role role;
+        private final Session session;
+        private final AuthAppService authAppService;
 
-        @Option(names = "--p", required = true, description = "密码", interactive = true)
-        String password;
+        public Create(Session s, AuthAppService auth){this.authAppService = auth; this.session = s; }
+        public void run(){
+            if(role != User.Role.ADMIN){
+                if(!session.ensureAdmin()){
+                    System.out.println("无管理员权限，无法创建管理员");
+                    return;
+                } else{
+                    var u = authAppService.createNew(username, password, role);
+                }
+            }
+            var u = authAppService.createNew(username, password, role);
+            System.out.println("成功创建角色" + role);
+            session.login(u);
+        }
+    }
+
+
+    @Command(name="login", description="登录")
+    static class Login implements Runnable {
+        @Option(names="--u", required=true, description="用户名（alice/bob/sam/tom）")  String username;
+        @Option(names = "--p", required = true, description = "密码", interactive = true)  String password;
+
         private final Session session; private final AuthAppService auth;
         public Login(Session s, AuthAppService a){ this.session=s; this.auth=a; }
 
         public void run() {
-            var u = auth.authenticate(username, password).orElse(null);
+            var u = auth.authenticate(username, password);
             if (u == null) System.out.println("登录失败/用户不存在或被禁用");
             else { session.login(u); System.out.printf("欢迎 %s [%s]%n", u.getUserName(), u.getRole()); }
         }

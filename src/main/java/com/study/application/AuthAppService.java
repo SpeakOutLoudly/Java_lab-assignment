@@ -4,7 +4,9 @@ import com.study.domain.model.User;
 import com.study.domain.repository.UserRepository;
 import com.study.security.PasswordHasher;
 
+import javax.management.InstanceAlreadyExistsException;
 import java.time.Instant;
+import java.util.Optional;
 
 // AuthAppService.java
 public class AuthAppService {
@@ -12,6 +14,13 @@ public class AuthAppService {
     private final PasswordHasher hasher;
     public AuthAppService(UserRepository users, PasswordHasher hasher){
         this.users = users; this.hasher = hasher;
+    }
+
+    // 创建 user 并存储
+    public User createNew(String username, String passwordHash, User.Role role) {
+        Instant now = Instant.now();
+        User user = User.createNew(username, passwordHash, role, now);
+        return users.save(user);
     }
 
     public User authenticate(String username, String rawPassword){

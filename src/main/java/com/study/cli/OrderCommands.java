@@ -44,7 +44,7 @@ public class OrderCommands implements Runnable {
 
         public void run() {
             if(!session.isLogin()){ System.out.println("未登录"); return; }
-            var list = orderRepo.listByBuyer(session.requireLogin().id);
+            var list = orderRepo.listByBuyer(session.requireLogin().getId());
             if(list.isEmpty()){ System.out.println("暂无订单"); return; }
             System.out.printf("%-6s %-8s %-6s %-8s %-10s%n","订单ID","商品ID","数量","金额(元)","状态");
             for(var o: list){

@@ -2,6 +2,10 @@ package com.study.security;
 
 import com.study.domain.model.User;
 
+/**
+ * Session 只在 Commands 里面调用，不在 Service 里调用
+ * */
+
 public class Session {
     private User current;
 

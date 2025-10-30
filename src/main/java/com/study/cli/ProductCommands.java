@@ -39,6 +39,7 @@ public class ProductCommands implements Runnable{
             if(!session.isLogin()) {System.out.println("未登录");}
             if(!session.ensureSeller()) {System.out.println("非卖家，无法创建");}
             // TODO 这个 ensureSeller() 的逻辑还要改改
+            // 调用 ProductAppService 的 create
         }
     }
 

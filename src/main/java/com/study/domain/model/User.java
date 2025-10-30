@@ -52,9 +52,13 @@ public final class User {
     public void     changePasswordHash(String newHash) { if(newHash != null) newHash = this.passwordHash;}
     public void     touchLastLogin(Instant now) { this.lastLoginAt = now; }
     public void     bumpVersion() { this.version ++; }
-    /* 角色判断便捷方法 */
-    public boolean  isBuyer(){ return role == Role.BUYER; }
-    public boolean  isSeller(){ return role == Role.SELLER; }
-    public boolean  isAdmin(){ return role == Role.ADMIN; }
+
+    /* 存储 */
+    public void     attachPersistedIdentity(long id) {
+        if (this.id != 0) throw new IllegalStateException("id already set");
+        if (id <= 0) throw new IllegalArgumentException("id must be positive");
+        this.id = id;
+        if (this.version == 0) this.version = 1; // 首次入库后版本从0→1
+    }
 
 }
