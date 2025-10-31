@@ -1,6 +1,8 @@
 package com.study.cli;
 
 import java.util.List;
+
+import com.study.domain.common.*;
 import com.study.application.OrderAppService;
 import com.study.domain.model.Order;
 import com.study.domain.repository.OrderRepository;
@@ -13,11 +15,14 @@ import picocli.CommandLine.*;
 public class OrderCommands implements Runnable {
     public void run(){ System.out.println("子命令：create / list"); }
 
+    private final Page<Order> pages;
+    private final PageRequest pageRequests;
     private final Session session;
     private final OrderAppService order;
     private final OrderRepository orderRepo;
-    public OrderCommands(Session s, OrderAppService o, OrderRepository repo){
-        this.session=s; this.order=o; this.orderRepo=repo;
+    public OrderCommands(Session s, OrderAppService o, OrderRepository repo, Page<Order> pages, PageRequest pageRequests){
+        this.session=s; this.order=o; this.orderRepo=repo; this.pages = pages;
+        this.pageRequests = pageRequests;
     }
 
     @Command(name="create", description="创建订单（买家）")
@@ -44,12 +49,12 @@ public class OrderCommands implements Runnable {
 
         public void run() {
             if(!session.isLogin()){ System.out.println("未登录"); return; }
-            var list = orderRepo.listByBuyer(session.requireLogin().id);
+            var list = orderRepo.listByBuyer(session.requireLogin().getId(), );
             if(list.isEmpty()){ System.out.println("暂无订单"); return; }
             System.out.printf("%-6s %-8s %-6s %-8s %-10s%n","订单ID","商品ID","数量","金额(元)","状态");
             for(var o: list){
                 System.out.printf("%-6d %-8d %-6d %-8.2f %-10s%n",
-                        o.id, o.productId, o.qty, o.amount/100.0, o.status);
+                        o.id, o.productId, o.qty, o.amount/100.0, o.getStatus());
             }
         }
     }

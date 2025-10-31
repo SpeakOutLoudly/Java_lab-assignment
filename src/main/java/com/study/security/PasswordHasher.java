@@ -7,7 +7,5 @@ public interface PasswordHasher {
     boolean matches(String raw, String hash);
 }
 
-// security/BCryptPasswordHasher.java
-
 
 

@@ -13,8 +13,7 @@ public interface OrderRepository {
     Page<Order> listBySeller(long sellerId, PageRequest page);
 
     /** 创建订单（初始状态 CREATED），返回带 id/version 的订单 */
-    Order create(Order order);
-
+    Order save(Order order); //throws OptimisticLockException;
     /** 修改状态（状态机外层已校验），带版本比较，失败抛 OptimisticLockException 或返回 false */
     boolean updateStatus(long orderId, Order.Status from, Order.Status to, long expectedVersion);
 

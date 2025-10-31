@@ -2,6 +2,10 @@ package com.study.security;
 
 import com.study.domain.model.User;
 
+/**
+ * Session 只在 Commands 里面调用，不在 Service 里调用
+ * */
+
 public class Session {
     private User current;
 
@@ -26,17 +30,20 @@ public class Session {
     }
 
     /** 便捷鉴权 */
-    public void ensureBuyer() {
+    public boolean ensureBuyer() {
         var u = requireLogin();
         if (u.getRole() != User.Role.BUYER) throw new RuntimeException("需要买家身份");
+        return true;
     }
-    public void ensureSeller() {
+    public boolean ensureSeller() {
         var u = requireLogin();
         if (u.getRole() != User.Role.SELLER) throw new RuntimeException("需要卖家身份");
+        return true;
     }
-    public void ensureAdmin() {
+    public boolean ensureAdmin() {
         var u = requireLogin();
         if (u.getRole() != User.Role.ADMIN) throw new RuntimeException("需要管理员身份");
+        return true;
     }
 
     /** 工具：当前用户ID（常用于用例调用） */
@@ -44,6 +51,6 @@ public class Session {
 
     /** whoami 展示用 */
     public String who() {
-        return isLogin() ? (current.getName() + " [" + current.getRole() + "]") : "未登录";
+        return isLogin() ? (current.getUserName() + " [" + current.getRole() + "]") : "未登录";
     }
 }

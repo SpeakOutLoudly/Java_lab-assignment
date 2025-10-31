@@ -1,4 +1,4 @@
-package com.study.cli;
+package com.study.cli.support;
 
 // 处理输入，分发指令
 
