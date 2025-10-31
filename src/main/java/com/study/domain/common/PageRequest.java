@@ -18,7 +18,7 @@ public final class PageRequest {
 
     public int getPage() { return page; }
     public int getSize() { return size; }
-    public Sort sort() { return sort; }
+    public Sort getSort() { return sort; }
 
     /** 便捷: 计算 OFFSET（给实现层用；注意 page 从 1 开始） */
     public int offset() { return (page - 1) * size; }

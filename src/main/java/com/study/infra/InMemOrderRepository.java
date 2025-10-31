@@ -2,6 +2,7 @@ package com.study.infra;
 
 import com.study.domain.common.Page;
 import com.study.domain.common.PageRequest;
+import com.study.domain.common.Sort;
 import com.study.domain.model.Order;
 import com.study.domain.repository.OrderRepository;
 
@@ -20,103 +21,98 @@ public class InMemOrderRepository implements OrderRepository {
         return Optional.ofNullable(byId.get(id));
     }
 
-    // TODO 待完善
+    /** 简化实现：忽略 expectedVersion，存在则覆盖保存，不存在返回 false */
     @Override
-    public boolean saveChanges(Order order, long expectedVersion){
-
+    public boolean saveChanges(Order order, long expectedVersion) {
+        if (order == null || order.getId() == 0) return false;
+        if (!byId.containsKey(order.getId())) return false;
+        byId.put(order.getId(), order);
         return true;
     }
-    /** 修改状态（状态机外层已校验），带版本比较，失败抛 OptimisticLockException 或返回 false */
+
+    /** 简化实现：校验 from 状态，更新为 to；忽略 expectedVersion */
     @Override
-    public boolean updateStatus(long orderId, Order.Status from, Order.Status to, long expectedVersion){
+    public boolean updateStatus(long orderId, Order.Status from, Order.Status to, long expectedVersion) {
+        var cur = byId.get(orderId);
+        if (cur == null) return false;
+        if (cur.getStatus() != from) return false;
+        switch (to) {
+            case PAID ->    cur.paid(Instant.now());
+            case SHIPPED -> cur.shipped(Instant.now());
+            case CONFIRMED -> cur.confirm(Instant.now());
+            case FINISHED -> cur.finish(Instant.now());
+            case CANCELLED -> cur.cancel(Instant.now());
+            default -> throw new IllegalArgumentException("非法");
+        }
+        byId.put(orderId, cur);
         return true;
     }
 
     @Override
     public Order save(Order o) {
-        // 最小化：不做乐观锁；如果需要，改成比较 o.getVersion()
         if (o.getId() == 0) {
-            long id = idGen.getAndIncrement();
-            // 若你的 Order 有 attachPersistedIdentity(...)，建议用它
-            try {
-                o.getClass().getMethod("attachPersistedIdentity", long.class).invoke(o, id);
-            } catch (ReflectiveOperationException e) {
-                // 没有的话就退回直接设置（若有 setter）
-                // 如果没有 setter，说明你的 Order 已经在工厂里处理好了，这里只 put 即可
-                // 如需强制要求 attach/bump，请在 Order 内提供对应方法
-                // 这里为了通用性，仅保留 put
-            }
+            o.attachPersistedIdentity(idGen.getAndIncrement());   // 练习版：直接赋 id
         }
         byId.put(o.getId(), o);
         return o;
     }
 
     @Override
-    public Page<Order> listByBuyer(long buyerId, PageRequest page) {
+    public Page<Order> listByBuyer(long buyerId, PageRequest req) {
+        var cmp = resolveComparator(req);
         List<Order> all = byId.values().stream()
-                // 若 getBuyerId() 返回 Optional<Long>，用 orElse 取值；若返回 long，改为 o.getBuyerId() == buyerId
-                .filter(o -> {
-                    try {
-                        var opt = (Optional<Long>) o.getClass().getMethod("getBuyerId").invoke(o);
-                        return opt.orElse(-1L) == buyerId;
-                    } catch (ReflectiveOperationException e) {
-                        // 退回假设：有 long getBuyerId()
-                        try {
-                            long v = (long) o.getClass().getMethod("getBuyerId").invoke(o);
-                            return v == buyerId;
-                        } catch (ReflectiveOperationException ex) {
-                            return false;
-                        }
-                    }
-                })
-                .sorted(orderDesc())
+                .filter(o -> o.getBuyerId() == buyerId)
+                .sorted(cmp)
                 .collect(Collectors.toList());
-
-        return toPage(all, page);
+        return toPage(all, req);
     }
 
     @Override
-    public Page<Order> listBySeller(long sellerId, PageRequest page) {
+    public Page<Order> listBySeller(long sellerId, PageRequest req) {
+        var cmp = resolveComparator(req);
         List<Order> all = byId.values().stream()
-                .filter(o -> {
-                    try {
-                        long v = (long) o.getClass().getMethod("getSellerId").invoke(o);
-                        return v == sellerId;
-                    } catch (ReflectiveOperationException e) {
-                        return false;
-                    }
-                })
-                .sorted(orderDesc())
+                .filter(o -> o.getSellerId() == sellerId)
+                .sorted(cmp)
                 .collect(Collectors.toList());
-
-        return toPage(all, page);
+        return toPage(all, req);
     }
 
     /* ============ 工具 ============ */
 
-    // 排序：createdAt DESC，再 id DESC（createdAt 允许为 null 时放最后）
-    private Comparator<Order> orderDesc() {
-        Comparator<Instant> c = Comparator.nullsLast(Comparator.naturalOrder());
+    // 默认排序：createdAt DESC，再 id DESC
+    private Comparator<Order> defaultOrderDesc() {
         return Comparator
-                .comparing((Order o) -> {
-                    try {
-                        return (Instant) o.getClass().getMethod("getCreatedAt").invoke(o);
-                    } catch (ReflectiveOperationException e) {
-                        return null;
-                    }
-                }, c).reversed()
-                .thenComparing(o -> o.getId(), Comparator.reverseOrder());
+                .comparing(Order::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder()))
+                .reversed()
+                .thenComparing(Order::getId, Comparator.reverseOrder());
+    }
+
+    // 根据 PageRequest.sort 解析排序；不识别的字段回退默认
+    private Comparator<Order> resolveComparator(PageRequest req) {
+        if (req == null || req.getSort() == null || req.getSort().isUnsorted()) {
+            return defaultOrderDesc();
+        }
+        // 练习版：只看第一个排序字段；可按需扩展为多字段
+        Sort.Order first = req.getSort().orders().get(0);
+        Comparator<Order> c = switch (first.property()) {
+            case "id" -> Comparator.comparing(Order::getId);
+            case "createdAt" -> Comparator.comparing(
+                    Order::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder()));
+            case "amount" -> Comparator.comparing(Order::getAmount);
+            default -> defaultOrderDesc(); // 未识别字段回退默认
+        };
+        if (first.direction() == Sort.Direction.DESC) c = c.reversed();
+        // 次序稳定：再按 id DESC 兜底
+        return c.thenComparing(Order::getId, Comparator.reverseOrder());
     }
 
     private Page<Order> toPage(List<Order> all, PageRequest req) {
-        int page = Math.max(1, req.getPage()); // 假设 PageRequest 是 1-based
+        int page = Math.max(1, req.getPage()); // 1-based
         int size = Math.max(1, req.getSize());
         int from = Math.min((page - 1) * size, all.size());
         int to   = Math.min(from + size, all.size());
         List<Order> slice = all.subList(from, to);
         long total = all.size();
-
-        // 如果你的 Page 不是 Page.of(...) 这种工厂，请改成项目里的构造方式
-        return new Page<Order>(slice, page, size, total);
+        return new Page<>(slice, page, size, total);
     }
 }

@@ -20,7 +20,7 @@ public final class Order {
 
     private long version;           // 乐观锁
 
-    public enum Status {CREATED, CONFIRMED, FINISHED, CANCELLED};    // 订单状态
+    public enum Status {CREATED, PAID, SHIPPED, CONFIRMED, FINISHED, CANCELLED};    // 订单状态
 
     private Order(){}
 
@@ -71,18 +71,32 @@ public final class Order {
 
     /* 领域行为：主要是订单状态转换 */
     //
-    public void confirm(Instant now) {
+    public void paid(Instant now){
         requireStatus(Status.CREATED);
+        this.status = Status.PAID;
+        this.finishedAt = Objects.requireNonNull(now, "now");
+    }
+
+    public void shipped(Instant now){
+        requireStatus(Status.PAID);
+        this.status = Status.SHIPPED;
+        this.finishedAt = Objects.requireNonNull(now, "now");
+    }
+
+    // 已经发货了，但未收货
+    public void confirm(Instant now) {
+        requireStatus(Status.SHIPPED);
         this.status = Status.CONFIRMED;
         this.confirmedAt = Objects.requireNonNull(now, "now");
     }
-
+    // 结束订单
     public void finish(Instant now) {
         requireStatus(Status.CONFIRMED);
         this.status = Status.FINISHED;
         this.finishedAt = Objects.requireNonNull(now, "now");
     }
 
+    // 只要没结束 Finish 就可以取消订单
     public void cancel(Instant now) {
         if (this.status == Status.FINISHED)
             throw new IllegalStateException("cannot cancel a finished order");

@@ -22,8 +22,6 @@ public final class Review {
     private Sentiment sentiment;  // GOOD/BAD/NORMAL（可由前台选择或后台计算）
     private Status status;        // 审核与展示状态
 
-    private int helpfulCount;     // “有用”/点赞计数（>=0）
-
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -49,7 +47,6 @@ public final class Review {
         r.comment = (comment == null) ? "" : comment.trim();
         r.sentiment = sentiment;
         r.status = Status.PENDING;       // 新建待审核
-        r.helpfulCount = 0;
         r.createdAt = now;
         r.updatedAt = now;
         r.version = 0;
@@ -65,7 +62,6 @@ public final class Review {
         Objects.requireNonNull(status, "status");
         Objects.requireNonNull(createdAt, "createdAt");
         Objects.requireNonNull(updatedAt, "updatedAt");
-        if (helpfulCount < 0) throw new IllegalArgumentException("helpfulCount < 0");
         if (comment == null) throw new IllegalArgumentException("comment null");
     }
 
@@ -105,16 +101,9 @@ public final class Review {
         touch(now);
     }
 
-    /** 设置/更新情感标签（可由算法或运营修改） */
+    /** 设置情感标签（自己定） */
     public void setSentiment(Sentiment newSentiment, Instant now) {
         this.sentiment = Objects.requireNonNull(newSentiment, "sentiment");
-        touch(now);
-    }
-
-    /** 点赞/有用计数（幂等性与防刷在上层处理） */
-    public void increaseHelpful(int delta, Instant now) {
-        if (delta <= 0) throw new IllegalArgumentException("delta must be > 0");
-        this.helpfulCount = Math.addExact(this.helpfulCount, delta);
         touch(now);
     }
 
@@ -145,7 +134,6 @@ public final class Review {
     public String getComment() { return comment; }
     public Sentiment getSentiment() { return sentiment; }
     public Status getStatus() { return status; }
-    public int getHelpfulCount() { return helpfulCount; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
     public long getVersion() { return version; }
@@ -174,7 +162,6 @@ public final class Review {
                 ", rating=" + rating +
                 ", sentiment=" + sentiment +
                 ", status=" + status +
-                ", helpfulCount=" + helpfulCount +
                 ", createdAt=" + createdAt +
                 ", updatedAt=" + updatedAt +
                 ", version=" + version +
